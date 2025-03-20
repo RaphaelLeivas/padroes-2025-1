@@ -3,12 +3,19 @@ if (length(dev.list())) {
     dev.off()
 }
 
+library("plot3D")
+
 minkowski_distance <- function(p1, p2, p) {
   # p1 =  ponto 1, p2 = ponto 2
   # p = 2 é distancia euclidiana
   
+  # garante que sao da forma de matriz
+  if (!is.matrix(p1) || !is.matrix(p2)) {
+    stop("minkowski_distance argumento não e matricial")
+  }
+    
   n <- ncol(p1) # dimensao
-  print(p1)
+
   partial_sum <- 0
   for (i in 1:n) {
     partial_sum <- partial_sum + (abs(p1[i] - p2[i]))^p
@@ -28,25 +35,29 @@ myknn <- function(Xarg, Yarg, xt, k) {
     current_point <- matrix(X[i,], ncol = 2)
     
     # ambos pontos devem estar na forma de matriz - cuidado
-    dist_to_point <- minkowski_distance(current_point, xt, p = 2)
+    dist_to_point <- minkowski_distance(current_point, xt, p = 4)
     label_of_point <- Y[i]
     
     dist_matrix[i,] <- c(dist_to_point, label_of_point)
   }
   
-  print(dist_matrix)
-  
   # agora é fazer o sort da matriz. ai eu consigo pegar os k mais proximos
   # junto com os seus labels
+  ordered_distances <- dist_matrix[order(dist_matrix[,1]),]
+  
+  # calcula o sign nos k primeiros mais proximos
+  final_label <- sign(sum(ordered_distances[1:k, n]))
+  
+  return (final_label)
 }
 
 # aberturas das gaussianas: quanto maior s, mais ela espalha
-s1<-0.3
-s2<-0.3
+s1<-0.8
+s2<-0.8
 
 nc<-100 # numero de pontos de cada classe
 
-k_list <- c(3)
+k_list <- c(3, 5, 9)
 
 for (k in k_list) {
   # centro dessa gaussiana esta na posicao (2,2)
@@ -74,13 +85,22 @@ for (k in k_list) {
   yc2 <- rep(-1, nc)
   Y <- c(yc1, yc2)
   
+  # gera o grid
+  x1grid <- seq(0, 6, 0.1)
+  x2grid <- seq(0, 6, 0.1)
+  grid_matrix <- matrix(NA, nrow = length(x1grid), ncol = length(x2grid))
   
-  # dados gerados. 
+  for (i in 1:length(x1grid)) {
+    for (j in 1:length(x2grid)) {
+      current_point_grid <- matrix(c(x1grid[i], x2grid[j]), ncol = 2)
+      
+      # calcula o knn
+      grid_matrix[i, j] = myknn(X, Y, current_point_grid, k)
+    }
+  }
   
-  # calcula o knn
-  myknn(X, Y, matrix(c(2,2), ncol = 2), k)
-  
-  #gera o agora ca
+  contour2D(grid_matrix, x1grid, x2grid, levels=0, xlim=c(0,6), ylim=c(0,6), 
+            add = T, col = "green", lwd = 2)
 }
 
 
