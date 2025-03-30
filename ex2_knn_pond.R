@@ -84,15 +84,45 @@ myknn <- function(X, Y, xt, k, h) {
   return (sign(sumk))
 }
 
+calculate_q1q2 <- function(X, Y, h) {
+  N <- dim(X)[1] # numero de pontos (numero de linhas de X)
+  n <- dim(X)[2] # numero de variaveis (dimensao do esp de entrada) (n de colunas de X)
+  K <- h * diag(n) # h * matriz identidade
+  
+  q1q2_mat <- matrix(NA, nrow = N, ncol = 2)
+  
+  for (i in 1:N) {
+    xt <- X[i,]
+    xt_label <- Y[i]
+    q1_sum <- 0 # todos que sao da mesma classe que ela
+    q2_sum <- 0 # # todos que sao de classe diferente que ela
+    
+    for (j in 1:N) {
+      current_point <- X[j,]
+      current_point_label <- Y[j]
+      
+      if (current_point_label == 1) {
+        q1_sum <- q1_sum + pdfnvar(xt, current_point, K, n)
+      } else {
+        q2_sum <- q2_sum + pdfnvar(xt, current_point, K, n)
+      }
+    }
+    
+    q1q2_mat[i, 1] <- q1_sum
+    q1q2_mat[i, 2] <- q2_sum
+  }
+  
+  return (q1q2_mat)
+}
+
 # aberturas das gaussianas: quanto maior s, mais ela espalha
-s1 <- 0.5
-s2 <- 0.5
+s1 <- 0.7
+s2 <- 0.7
 
 nc <- 100 # numero de pontos de cada classe
 
-k_list <- c(3, 5, 9, 17)
-k_list <- c(11, 21, 41, 61)
-h <- 0.5
+k_list <- c(3, 9, 17)
+h_list <- c(0.01, 0.05, 0.2, 0.5)
 
 # par(mfrow=c(2,2), cex.lab=2, cex.axis=2, cex.main=2, mai = c(0.4, 0.4, 0.4, 0.4))
 
@@ -117,37 +147,66 @@ x1grid <- seq(0, 6, 0.1)
 x2grid <- seq(0, 6, 0.1)
 grid_matrix <- matrix(NA, nrow = length(x1grid), ncol = length(x2grid))
 
-for (k in k_list) {
+par(mfrow=c(2,2), cex.lab=2, cex.axis=2, cex.main=2, mai = c(0.4, 0.4, 0.4, 0.4))
+
+for (h in h_list) {
+  q1q2_mat <- calculate_q1q2(X, Y, h)
+  
   plot(
     NULL,
-    main = paste("KNN: k = ", k),
-    xlab = "x1",
-    ylab = "x2",
-    ylim = c(0, 6),
-    xlim = c(0, 6)
+    main = paste("Q1 x Q2 - ", "h = ", h),
+    xlab = "Q1",
+    ylab = "Q2",
+    ylim = c(0, max(q1q2_mat)),
+    xlim = c(0, max(q1q2_mat)),
+    cex.main = 2,
+    cex.axis = 2,
+    cex.lab = 2
   )
   
-  points(xc1, col = "red", lwd = 2)
-  points(xc2, col = "blue", lwd = 2)
-  
-  for (i in 1:length(x1grid)) {
-    for (j in 1:length(x2grid)) {
-      current_point_grid <- matrix(c(x1grid[i], x2grid[j]), ncol = 2)
-      
-      # calcula o knn
-      grid_matrix[i, j] = myknn(X, Y, current_point_grid, k, h)
+  points(q1q2_mat[1:nc,], col = "red", lwd = 3)
+  points(q1q2_mat[(nc+1):(2*nc),], col = "blue", lwd = 3)
+  lines(seq(0, 100, 0.1), seq(0, 100, 0.1), col = "blue", lwd = 2)
+}
+
+par(mfrow=c(2,2), cex.lab=2, cex.axis=2, cex.main=2, mai = c(0.4, 0.4, 0.4, 0.4))
+
+for (k in k_list) {
+  for (h in h_list) {
+    plot(
+      NULL,
+      main = paste("KNN: k = ", k, "h = ", h),
+      xlab = "x1",
+      ylab = "x2",
+      ylim = c(0, 6),
+      xlim = c(0, 6),
+      cex.main = 2,
+      cex.axis = 2,
+      cex.lab = 2
+    )
+    
+    points(xc1, col = "red", lwd = 2)
+    points(xc2, col = "blue", lwd = 2)
+    
+    for (i in 1:length(x1grid)) {
+      for (j in 1:length(x2grid)) {
+        current_point_grid <- matrix(c(x1grid[i], x2grid[j]), ncol = 2)
+        
+        # calcula o knn
+        grid_matrix[i, j] = myknn(X, Y, current_point_grid, k, h)
+      }
     }
+    
+    contour2D(
+      grid_matrix,
+      x1grid,
+      x2grid,
+      levels = 0,
+      xlim = c(0, 6),
+      ylim = c(0, 6),
+      add = T,
+      col = "green",
+      lwd = 2
+    )
   }
-  
-  contour2D(
-    grid_matrix,
-    x1grid,
-    x2grid,
-    levels = 0,
-    xlim = c(0, 6),
-    ylim = c(0, 6),
-    add = T,
-    col = "green",
-    lwd = 2
-  )
 }
