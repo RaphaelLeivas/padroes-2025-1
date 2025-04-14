@@ -32,7 +32,7 @@ trainperceptron <- function(
         for (i in 1:N) {
             irand <- xseq[i]
             # yhati <- 1.0 * ((xin[irand, ] %*% wt) >= 0)
-            yhati <- if ((xin[irand, ] %*% wt) >= 0) 1 else -1 # nossa saida Y é -1 ou 1
+            yhati <- if ((xin[irand, ] %*% wt) >= 0) 1 else 0 # nossa saida Y é 0 ou 1
             ei <- yd[irand] - yhati
             dw <- c(eta) * c(ei) * xin[irand, ] # original: dw <- eta * ei * xin[irand, ]
             wt <- wt + dw
@@ -59,6 +59,6 @@ yperceptron <- function(x, w, par) {
   if (u >= 0) {
     return (1)
   } else {
-    return (-1)
+    return (0)
   }
 }
