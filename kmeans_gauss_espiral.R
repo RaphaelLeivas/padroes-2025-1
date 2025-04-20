@@ -17,7 +17,7 @@ grid_start <- 1.7
 grid_seq <- seq(-grid_start, grid_start, grid_spacing)
 
 N <- 500
-k <- 30
+k <- 10
 n <- 2 # dimensao
 C1_LABEL <- 1
 C2_LABEL <- 2
@@ -95,6 +95,12 @@ for (fold in 1:n_folds) {
       # agora centra uma gaussiana em cada centro o kmeans e calcula o p()
       M1_c1[ci, cj] <- mymix(x, xclusters_c1) * pc1
       M1_c2[ci, cj] <- mymix(x, xclusters_c2) * pc2
+      
+      if (M1_c1[ci, cj] >= M1_c2[ci, cj]) {
+        Mgrid[ci, cj] = 1
+      } else {
+        Mgrid[ci, cj] = 2
+      }
     }
   }
   
@@ -121,18 +127,21 @@ for (fold in 1:n_folds) {
     }
   }
   
-  # plot(xall_c1[,1], xall_c1[,2], col=kmeansret_c1$cluster, lwd = 2, xlim = xlim, ylim = ylim)
-  # par(new=T)
-  # contour(seqi, seqj, M1_c1, xlim = xlim, ylim = ylim, lwd = 2) # mostra que é uma funcao continua, que junta as gaussianas todas
-  # par(new=T)
-  # points(kmeansret_c1$centers[,1:n], col = "blue", pch = 4, lwd = 4)
-  # 
-  # plot(xall_c2[,1], xall_c2[,2], col=kmeansret_c2$cluster, lwd = 2, xlim = xlim, ylim = ylim)
-  # par(new=T)
-  # contour(seqi, seqj, M1_c2, xlim = xlim, ylim = ylim,  lwd = 2) # mostra que é uma funcao continua, que junta as gaussianas todas
-  # par(new=T)
-  # points(kmeansret_c2$centers[,1:n], col = "blue", pch = 4, lwd = 4)
+  plot(xall_c1[,1], xall_c1[,2], col=kmeansret_c1$cluster, lwd = 2, xlim = xlim, ylim = ylim)
+  par(new=T)
+  contour(seqi, seqj, M1_c1, xlim = xlim, ylim = ylim, lwd = 2) # mostra que é uma funcao continua, que junta as gaussianas todas
+  par(new=T)
+  points(kmeansret_c1$centers[,1:n], col = "blue", pch = 4, lwd = 4)
+
+  plot(xall_c2[,1], xall_c2[,2], col=kmeansret_c2$cluster, lwd = 2, xlim = xlim, ylim = ylim)
+  par(new=T)
+  contour(seqi, seqj, M1_c2, xlim = xlim, ylim = ylim,  lwd = 2) # mostra que é uma funcao continua, que junta as gaussianas todas
+  par(new=T)
+  points(kmeansret_c2$centers[,1:n], col = "blue", pch = 4, lwd = 4)
   
+  contour(seqi, seqj, Mgrid, lwd = 2)
+  
+  BUG()
   # persp3D(seqi, seqj, M1_c1)
   # persp3D(seqi, seqj, M1_c2)
   
