@@ -1,3 +1,7 @@
+# inlist: lista de amostras de cada cluster. exemplo: se temos 4 clsuters cada um com 100 amostras, é uma
+# lsita de 4 items, cada item uma matriz de 100 x n (n é a dimensão, 100 é o numero de amostras do cluster)
+# x: ponto atual que quero saber
+# retorna: probabilidade do ponto x pertencer à mistura de gaussianas dada
 mymix<-function(x,inlist)
 
 {

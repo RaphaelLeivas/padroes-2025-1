@@ -78,15 +78,13 @@ for (fold in 1:n_folds) {
   X_train <- data_for_train[, 1:n]
   Y_train <- data_for_train[, n+1]
   
-  cov_scalar <- 6.5 # possivel hiperparametro
-  
   # calcula as medias das colunas da classe 1
   c1_means <- as.numeric(colMeans(data_for_train[which(data_for_train[,n+1]==BENIGN_LABEL),1:n]))
-  k1_cov <- cov(data_for_train[which(data_for_train[,n+1]==BENIGN_LABEL),1:n]) * cov_scalar # falso, tem que ser somente cov(x que tem BENIGN_LABEL, sem o label - filtrar)
+  k1_cov <- cov(data_for_train[which(data_for_train[,n+1]==BENIGN_LABEL),1:n]) 
   
   # agora para a classe 2
   c2_means <- as.numeric(colMeans(data_for_train[which(data_for_train[,n+1]==MALIGN_LABEL),1:n]))
-  k2_cov <- cov(data_for_train[which(data_for_train[,n+1]==MALIGN_LABEL),1:n]) * cov_scalar
+  k2_cov <- cov(data_for_train[which(data_for_train[,n+1]==MALIGN_LABEL),1:n])
 
   # calcula a saida do Bayes para cada classe no conj de teste
   num_benings <- 0
