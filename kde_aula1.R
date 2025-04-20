@@ -15,7 +15,7 @@ set.seed(203)
 n <- 1 # dimensao
 N <- 500 # numero de pontos de cada classe
 
-h = 0.2 # hiperparametro do KDE
+h = 0.005 # hiperparametro do KDE
 
 # pro grafico
 ylim <- c(-1.5, 1.5)
@@ -101,7 +101,8 @@ for (fold in 1:n_folds) {
   yhat <- sign(pc1x - pc2x)
   
   par(new = T)
-  plot(xgrid, yhat, xlim = xlim, ylim = ylim, col = "black", type = 'l', lwd = 2)
+  plot(xgrid, yhat, xlim = xlim, ylim = ylim, col = "black", type = 'l', lwd = 2,
+       main = paste("h = ", h))
   
   # agora joga no conjunto de testes
   for (i in 1:nrow(data_for_test)) {
