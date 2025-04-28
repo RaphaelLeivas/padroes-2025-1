@@ -47,14 +47,14 @@ kdemulti <- function(xi, xall, h) {
 
 N <- 120
 n <- 2
-h <- 0.5
+# h <- 0.5
 
 m1 <- c(2,2)
 m2 <- c(4,4)
 m3 <- c(2,4)
 m4 <- c(4,2)
 
-variancia = 0.3
+variancia = 0.4
 
 g1 <- matrix(rnorm(2 * N), ncol = n, nrow = N)*variancia + matrix(m1, nrow = N, ncol = n, byrow = T)
 g2 <- matrix(rnorm(2 * N), ncol = n, nrow = N)*variancia + matrix(m2, nrow = N, ncol = n, byrow = T)
@@ -67,83 +67,72 @@ xc2 <- rbind(g3, g4)
 yc2 <- rep(C2_LABEL, nrow(xc1))
 
 xall <- rbind(g1, g2, g3, g4)
-yall <- cbind(yc1, yc2)
+yall <- c(yc1, yc2)
 
 pc1 <- nrow(xc1) / nrow(xall)
 pc2 <- nrow(xc2) / nrow(xall)
 
 h_list <- c(0.05, 0.1, 0.5, 1)
 
-par(mfrow=c(1,2))
-
-plot(xc1[,1], xc1[,2], xlim = c(0,6), ylim=c(0,6), xlab='', ylab='', col = "red")
-par(new=T)
-plot(xc2[,1], xc2[,2], xlim = c(0,6), ylim=c(0,6), xlab='', ylab='', col = "blue")
-
-
-# px<-kdemulti(xall[1,], xall, h)
-pxc1<-kdemulti(xc2[1,], xc1, h)
-pxc2<-kdemulti(xc2[1,], xc2, h)
-print(pxc1 / pxc2)
-
-
-# grid
-
-seqi <- seq(0, 6, 0.1)
-seqj <- seq(0, 6, 0.1)
-M1 <- matrix(1, nrow =  length(seqi), ncol = length(seqj))
-
-ci <- 0
-
-for (i in seqi) {
-  ci <- ci + 1
-  cj <- 0
+for (h in h_list) {
+  par(mfrow=c(1,2))
   
-  for (j in seqj) {
-    cj <- cj +1
-    x <- matrix(c(i, j), byrow = T, ncol = 1)
-    pxc1 <- kdemulti(x, xc1, h)
-    pxc2 <- kdemulti(x, xc2, h)
+  plot(xc1[,1], xc1[,2], xlim = c(0,6), ylim=c(0,6), xlab='', ylab='', col = "red", , main = paste("h = ", h))
+  par(new=T)
+  plot(xc2[,1], xc2[,2], xlim = c(0,6), ylim=c(0,6), xlab='', ylab='', col = "blue")
+  
+  # px<-kdemulti(xall[1,], xall, h)
+  pxc1<-kdemulti(xc2[1,], xc1, h)
+  pxc2<-kdemulti(xc2[1,], xc2, h)
+  print(pxc1 / pxc2)
+  
+  # grid
+  seqi <- seq(0, 6, 0.1)
+  seqj <- seq(0, 6, 0.1)
+  M1 <- matrix(1, nrow =  length(seqi), ncol = length(seqj))
+  
+  ci <- 0
+  
+  for (i in seqi) {
+    ci <- ci + 1
+    cj <- 0
     
-    if (pxc1 * pc1 > pxc2 * pc2) {
-      M1[ci, cj] <- 1
-    } else {
-      M1[ci, cj] <- 0
+    for (j in seqj) {
+      cj <- cj +1
+      x <- matrix(c(i, j), byrow = T, ncol = 1)
+      pxc1 <- kdemulti(x, xc1, h)
+      pxc2 <- kdemulti(x, xc2, h)
+      
+      if (pxc1 * pc1 > pxc2 * pc2) {
+        M1[ci, cj] <- C1_LABEL
+      } else {
+        M1[ci, cj] <- C2_LABEL
+      }
     }
-    
-    # M1[ci, cj] <- 1 * (pxc1 > (pc2 / pc1) * pxc2)
   }
-}
-
-par(new = T)
-contour(seqi, seqj, M1, levels = 1, lwd = 2)
-# ribbon3D(seqi, seqj, M1)
-
-Nall <- nrow(xall)
-
-pxc1vec <- matrix()
-pxc2vec <- matrix()
-
-for (i in 1:Nall) {
-  # para amostra calcular o kde dela e guardar
-  pxc1vec[i] <- kdemulti(xall[i,], xc1, h)
-  pxc2vec[i] <- kdemulti(xall[i,], xc2, h)
-}
-
-pxc1c2 <- cbind(pxc1vec, pxc2vec)
-colvec <- c('red', 'blue')
-
-# CORRIGIR CORES
-colors_vec <- c()
-col_seq <- c("red", "blue")
-
-for (i in 1:length(yall)) {
-  if (yall[i] == C1_LABEL) {
-    colors_vec <- c(colors_vec, "red")
-  } else {
-    colors_vec <- c(colors_vec, "blue")
+  
+  par(new = T)
+  contour(seqi, seqj, M1, levels = 1, lwd = 2)
+  # ribbon3D(seqi, seqj, M1)
+  
+  Nall <- nrow(xall)
+  
+  pxc1vec <- matrix()
+  pxc2vec <- matrix()
+  yhat_tst <- c()
+  
+  for (i in 1:Nall) {
+    # para amostra calcular o kde dela e guardar
+    pxc1vec[i] <- kdemulti(xall[i,], xc1, h)
+    pxc2vec[i] <- kdemulti(xall[i,], xc2, h)
   }
+  
+  pxc1c2 <- cbind(pxc1vec, pxc2vec)
+  col_seq <- c("red", "blue")
+  
+  plot(pxc1c2[,1], pxc1c2[,2], col = col_seq[((yall+1)/2) + 1], 
+       xlab="pxc1", ylab="pxc2", main = paste("h = ", h))
 }
 
-plot(pxc1c2[,1], pxc1c2[,2], col = col_seq[((yall+1)/2) + 1], xlab="pxc1", ylab="pxc2")
+
 
