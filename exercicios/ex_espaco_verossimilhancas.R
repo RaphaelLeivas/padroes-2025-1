@@ -12,10 +12,21 @@ fnormal1var <- function(x, m, r) {
   return (y)
 }
 
+distance_two_points <- function(x1, x2) {
+  return (sqrt(sum((x1 - x2)^2)))
+}
+
+# dimensao 2D
+distance_point_line <- function(x0, a, b, c) {
+  return (abs(a * x0[1] + b * x0[2] + c) / sqrt(a^2 + b^2))
+}
+
 set.seed(203)
 
 C1_LABEL <- 1
 C2_LABEL <- -1
+C1_LABEL_COL = "red"
+C2_LABEL_COL = "blue"
 grid_spacing <- 0.1
 
 # xi é cada amostra
@@ -81,11 +92,18 @@ all_data <- all_data[sample.int(nrow(all_data)), ]
 n_folds <- 10
 fold_size <- floor(N / n_folds)
 
-h_list <- c(0.001, 0.01, 0.1, 1, 10)
+h_list <- seq(0.1, 1.5, 0.1)
+h_counter <- 0
+# h_list <- c(0.1, 0.5, 1)
 
 acc_by_h <- c()
+dist_index_array <- c()
+ratio_corr_mat <- matrix(NA, ncol = 2, nrow = length(h_list))
+dpl_mat <- matrix(NA, ncol = 2, nrow = length(h_list))
+dpl_ratio <- c()
 
 for (h in h_list) {
+  h_counter <- h_counter + 1
   
   acc_array <- c()
   
@@ -158,24 +176,69 @@ for (h in h_list) {
       }
     }
     
-    acc_array <- c(acc_array, num_of_corrects / nrow(data_for_test) * 100)
+    # plota o espaço de semelhanças
     
-    # Nall <- nrow(X_train)
-    # 
-    # pxc1vec <- matrix()
-    # pxc2vec <- matrix()
-    # 
-    # for (i in 1:Nall) {
-    #   # para amostra calcular o kde dela e guardar
-    #   pxc1vec[i] <- kdemulti(Xtrain[i,], xc1, h)
-    #   pxc2vec[i] <- kdemulti(Xtrain[i,], xc2, h)
-    # }
-    # 
-    # pxc1c2 <- cbind(pxc1vec, pxc2vec)
-    # col_seq <- c("red", "blue")
-    # 
-    # plot(pxc1c2[,1], pxc1c2[,2], col = col_seq[((yall+1)/2) + 1], 
-    #      xlab="pxc1", ylab="pxc2", main = paste("h = ", h))
+    if (fold == 1) {
+      pxc1vec <- c()
+      pxc2vec <- c()
+      pxlabelvec <- c()
+      for (i in 1:nrow(data_for_train)) {
+        # para amostra calcular o kde dela e guardar
+        pxc1vec <- c(pxc1vec, kdemulti(X_train[i,], xc1_train, h))
+        pxc2vec <- c(pxc2vec, kdemulti(X_train[i,], xc2_train, h)) 
+        if (Y_train[i] == C1_LABEL) {
+          pxlabelvec <- c(pxlabelvec, "red")
+        } else {
+          pxlabelvec <- c(pxlabelvec, "blue")
+        }
+      }
+      
+      pxc1c2 <- cbind(pxc1vec, pxc2vec, pxlabelvec)
+      
+      plot(pxc1c2[,1], pxc1c2[,2], col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
+           main = paste("h = ", h))
+      
+      # calcula indices sobre o espaço de verossimilhanças
+      # procura algum que se relaciona bem com o h de maior acurácia
+      # melhor h: 0.5
+      
+      # indice 1: distancia entre os centroides
+      k = 2 # dois clusters
+      kmeansret <- kmeans(pxc1c2[, 1:2], k)
+      dist_index <- distance_two_points(kmeansret$centers[1,], kmeansret$centers[2,])
+      dist_index_array <- c(dist_index_array, dist_index)
+      
+      # indice 3: razao da distancias de cada centro à identidade
+      # identidade: 1x - 1y + 0 = 0
+      dpl_mat[h_counter, 1] <- distance_point_line(kmeansret$centers[1,], 1, -1, 0)
+      dpl_mat[h_counter, 2] <- distance_point_line(kmeansret$centers[2,], 1, -1, 0)
+      dpl_ratio <- c(dpl_ratio, dpl_mat[h_counter, 1] / dpl_mat[h_counter, 2])
+      
+      # indice 2: numero de pontos que cruzam a identidade
+      # num_corr_c1 <- 0
+      # num_corr_c2 <- 0
+      # for (i in 1:nrow(pxc1c2)) {
+      #   if (pxc1c2[i,3] == C1_LABEL_COL) {
+      #     # classe 1
+      #     if (as.numeric(pxc1c2[i, 1]) > as.numeric(pxc1c2[i, 2])) {
+      #       num_corr_c1 <- num_corr_c1 + 1
+      #     }
+      #   }
+      #   
+      #   if (pxc1c2[i,3] == C2_LABEL_COL) {
+      #     # classe 2
+      #     if (as.numeric(pxc1c2[i, 1]) < as.numeric(pxc1c2[i, 2])) {
+      #       num_corr_c2 <- num_corr_c2 + 1
+      #     }
+      #   }
+      # }
+      # 
+      # ratio_corr_mat[h_counter, 1] <- num_corr_c1 / nrow(pxc1c2[which(pxc1c2[,3] == C1_LABEL_COL),])
+      # ratio_corr_mat[h_counter, 2] <- num_corr_c2 / nrow(pxc1c2[which(pxc1c2[,3] == C2_LABEL_COL),])
+      
+    }
+    
+    acc_array <- c(acc_array, num_of_corrects / nrow(data_for_test) * 100)
   }
   
   acc_by_h <- c(acc_by_h, mean(acc_array))
@@ -188,7 +251,19 @@ for (h in h_list) {
   ft <- align(ft, align = "center", part = "all")
 }
 
+# plot(h_list, acc_by_h, lwd = 2, col = "black", type = "b")
+# plot(h_list, dist_index_array, lwd = 2, col = "black", type = "b")
+# plot(h_list, dpl_ratio, lwd = 2, col = "black", type = "b")
+# plot(dist_index_array, acc_by_h, lwd = 2, col = "black", type = "b")
+
 plot(h_list, acc_by_h, lwd = 2, col = "black", type = "b")
+par(new=T)
+plot(h_list, dpl_ratio, lwd = 2, col = "orange", type = "b")
+
+df <- data.frame(h_list, round(acc_by_h, 2))
+colnames(df) <- c("h", "Acurácia (%)")
+ft <- flextable(df)
+ft <- align(ft, align = "center", part = "all")
 
 
 

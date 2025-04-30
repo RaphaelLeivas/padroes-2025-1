@@ -67,7 +67,7 @@ xc2 <- rbind(g3, g4)
 yc2 <- rep(C2_LABEL, nrow(xc1))
 
 xall <- rbind(g1, g2, g3, g4)
-yall <- cbind(yc1, yc2)
+yall <- c(yc1, yc2)
 
 pc1 <- nrow(xc1) / nrow(xall)
 pc2 <- nrow(xc2) / nrow(xall)

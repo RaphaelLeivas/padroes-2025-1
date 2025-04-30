@@ -15,7 +15,7 @@ set.seed(203)
 n <- 1 # dimensao
 N <- 500 # numero de pontos de cada classe
 
-h = 0.5 # hiperparametro do KDE
+h = 0.005 # hiperparametro do KDE
 
 # pro grafico
 ylim <- c(-1.5, 1.5)
@@ -65,10 +65,6 @@ for (fold in 1:n_folds) {
   pc1 <- N1/(N1 + N2)
   pc2 <- N2/(N1 + N2)
   
-  plot(xc1_train, matrix(0, nrow = N1, ncol = n), xlim = xlim, ylim = ylim, col = "red")
-  par(new = T)
-  plot(xc2_train, matrix(0, nrow = N2, ncol = n), xlim = xlim, ylim = ylim, col = "blue")
-  
   # monta o grid
   grid_spacing = 0.05
   xgrid = seq(0, 6, grid_spacing)
@@ -77,48 +73,24 @@ for (fold in 1:n_folds) {
   for (i in (1:N1)) {
     pkde = fnormal1var(xgrid, xc1_train[i], h) / N1 # gaussiana especifica da amostra atual
     # divide por N para ficar menor que 1 a probabilidade
-    par(new=T)
+
     # plot(xgrid, pkde, type = 'l', col = 'red', xlim = xlim, ylim = ylim)
     pkde_c1 = pkde_c1 + pkde
   }
   
   pkde_c2 = rep(0, length(xgrid))
   for (i in (1:N2)) {
-    pkde = fnormal1var(xgrid, xc2_train[i], h) / N2 # gaussiana especifica da amostra atual
-    par(new=T)
-    # plot(xgrid, pkde, type = 'l', col = 'blue', xlim = xlim, ylim = ylim)
     pkde_c2 = pkde_c2 + pkde
   }
-  
-  par(new = T)
-  plot(xgrid, pkde_c1, type = 'l', col = 'red', xlim = xlim, ylim = ylim, lwd = 2)
-  par(new = T)
-  plot(xgrid, pkde_c2, type = 'l', col = 'blue', xlim = xlim, ylim = ylim, lwd = 2)
   
   # agora usa bayes com essas verossimilhanças para fazer a classificação
   pc1x = pkde_c1 * pc1
   pc2x = pkde_c2 * pc2
   yhat <- sign(pc1x - pc2x)
   
-  par(new = T)
-  plot(xgrid, yhat, xlim = xlim, ylim = ylim, col = "black", type = 'l', lwd = 2,
-       main = paste("h = ", h))
-  
   # agora joga no conjunto de testes
-  for (i in 1:nrow(data_for_test)) {
-    xtest_point = X_test[i]
-    xtest_label = Y_test[i]
-    
-    # procura a posição do grid o mais proximo possivel do xtest_point
-    # o valor de cada posicao no xgrid é (index - 1) * grid_spacing
-    # queremos (index - 1) * grid_spacing = xtest_point => index = xtest_point / grid_spacing + 1
-    index_in_xgrid = round(xtest_point / grid_spacing + 1)
-    xtest_label_hat = sign(pc1x[index_in_xgrid] - pc2x[index_in_xgrid])
-    
-    if (xtest_label_hat == xtest_label) {
-      num_of_corrects <- num_of_corrects + 1
-    }
-  }
+  pkde_c1_test <- fnormal1var(X_test, xc1_train[i], h) / N1
+  pkde_c2_test <- fnormal1var(X_test, xc1_train[i], h) / N1
 
   acc_array <- c(acc_array, num_of_corrects / fold_size * 100)
 }
