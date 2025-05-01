@@ -126,52 +126,24 @@ for (h in h_list) {
     
     pc1 <- nrow(xc1_train) / nrow(X_train)
     pc2 <- nrow(xc2_train) / nrow(X_train)
-    
-    # plot(xc1_train[,1], xc1_train[,2], xlim = c(0,6), ylim=c(0,6), xlab='', ylab='', col = "red", , main = paste("h = ", h))
-    # par(new=T)
-    # plot(xc2_train[,1], xc2_train[,2], xlim = c(0,6), ylim=c(0,6), xlab='', ylab='', col = "blue")
-    
-    # grid
-    seqi <- seq(0, 6, grid_spacing)
-    seqj <- seq(0, 6, grid_spacing)
-    M1 <- matrix(1, nrow =  length(seqi), ncol = length(seqj))
-    
-    ci <- 0
-    
-    for (i in seqi) {
-      ci <- ci + 1
-      cj <- 0
-      
-      for (j in seqj) {
-        cj <- cj +1
-        x <- matrix(c(i, j), byrow = T, ncol = 1)
-        pxc1 <- kdemulti(x, xc1_train, h)
-        pxc2 <- kdemulti(x, xc2_train, h)
-        
-        if (pxc1 * pc1 > pxc2 * pc2) {
-          M1[ci, cj] <- C1_LABEL
-        } else {
-          M1[ci, cj] <- C2_LABEL
-        }
-      }
-    }
-    
-    # par(new = T)
-    # contour(seqi, seqj, M1, levels = 1, lwd = 2)
-    
-    # calcula a acuracia no conjunto de testes
+
+    # itera sobre todos os pontos de teste
     for (i in 1:nrow(data_for_test)) {
       xt <- data_for_test[i, 1:n]
       yt <- data_for_test[i, n+1]
       
-      # coloca o xt no grid. ve se esta correto
-      # procura a posição do grid o mais proximo possivel do xtest_point
-      # o valor de cada posicao no xgrid é (index - 1) * grid_spacing
-      # queremos (index - 1) * grid_spacing = xtest_point => index = xtest_point / grid_spacing + 1
-      index_in_xgrid = round(xt[1] / grid_spacing + 1)
-      index_in_ygrid = round(xt[2] / grid_spacing + 1)
+      pxc1 <- kdemulti(xt, xc1_train, h)
+      pxc2 <- kdemulti(xt, xc2_train, h)
       
-      if (M1[index_in_xgrid, index_in_ygrid] == yt) {
+      yhat <- NA
+      
+      if (pxc1 * pc1 > pxc2 * pc2) {
+        yhat <- C1_LABEL
+      } else {
+        yhat <- C2_LABEL
+      }
+      
+      if (yhat == yt) {
         num_of_corrects <- num_of_corrects + 1
       }
     }
@@ -197,6 +169,9 @@ for (h in h_list) {
       
       plot(pxc1c2[,1], pxc1c2[,2], col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
            main = paste("h = ", h))
+      # par(new=T)
+      # plot(0:10, 0:10, type="l", lty=2, lwd=3, xlab="", ylab="",
+      #      xlim=as.numeric(c(0, max(pxc1c2[,1]))), ylim=as.numeric(c(0, max(pxc1c2[,2]))))
       
       # calcula indices sobre o espaço de verossimilhanças
       # procura algum que se relaciona bem com o h de maior acurácia
@@ -251,14 +226,14 @@ for (h in h_list) {
   ft <- align(ft, align = "center", part = "all")
 }
 
-# plot(h_list, acc_by_h, lwd = 2, col = "black", type = "b")
-# plot(h_list, dist_index_array, lwd = 2, col = "black", type = "b")
-# plot(h_list, dpl_ratio, lwd = 2, col = "black", type = "b")
-# plot(dist_index_array, acc_by_h, lwd = 2, col = "black", type = "b")
-
-plot(h_list, acc_by_h, lwd = 2, col = "black", type = "b")
-par(new=T)
-plot(h_list, dpl_ratio, lwd = 2, col = "orange", type = "b")
+par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
+plot(h_list, acc_by_h, type = "b", col = "black", lwd = 2, xlab = "h"
+     ,ylab = "Acurácia (%)") # first plot
+par(new = TRUE)
+plot(h_list, dpl_ratio, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
+     col = "orange")
+axis(side=4, at = pretty(range(dpl_ratio)))
+mtext("Índice 3", side=4, line=3)
 
 df <- data.frame(h_list, round(acc_by_h, 2))
 colnames(df) <- c("h", "Acurácia (%)")

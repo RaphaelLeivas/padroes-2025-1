@@ -11,6 +11,8 @@ set.seed(203)
 
 C1_LABEL <- 1
 C2_LABEL <- -1
+C1_LABEL_COL = "red"
+C2_LABEL_COL = "blue"
 grid_spacing <- 0.1
 
 # xi é cada amostra
@@ -40,6 +42,15 @@ kdemulti <- function(xi, xall, h) {
   pxi <- sum(emat)/(N * sqrt(2 * pi) * h)^n # eq 1.15
   
   return (pxi)
+}
+
+distance_two_points <- function(x1, x2) {
+  return (sqrt(sum((x1 - x2)^2)))
+}
+
+# dimensao 2D
+distance_point_line <- function(x0, a, b, c) {
+  return (abs(a * x0[1] + b * x0[2] + c) / sqrt(a^2 + b^2))
 }
 
 # pega os dados da package mlbench
@@ -81,12 +92,17 @@ all_data <- cbind(X, Y)
 n_folds <- 5
 fold_size <- floor(N / n_folds)
 
-h_list <- seq(0.5, 1.5, 0.05)
+# h_list <- seq(0.5, 1.5, 0.05)
+h_list <- seq(0.25, 5, 0.25)
+h_counter <- 0
 
 acc_by_h <- c()
+dpl_mat <- matrix(NA, ncol = 2, nrow = length(h_list))
+dpl_ratio <- c()
+
 
 for (h in h_list) {
-  
+  h_counter <- h_counter + 1
   acc_array <- c()
   
   for (fold in 1:n_folds) {
@@ -114,6 +130,9 @@ for (h in h_list) {
       xt <- data_for_test[i, 1:n]
       yt <- data_for_test[i, n+1]
       
+      # garante que xt é vetor coluna
+      xt <- matrix(xt, ncol = 1, nrow = n)
+      
       pxc1 <- kdemulti(xt, xc1_train, h)
       pxc2 <- kdemulti(xt, xc2_train, h)
       
@@ -129,43 +148,57 @@ for (h in h_list) {
         num_of_corrects <- num_of_corrects + 1
       }
     }
+
+    # plota o espaço de semelhanças
+    
+    if (fold == 1) {
+      pxc1vec <- c()
+      pxc2vec <- c()
+      pxlabelvec <- c()
+      for (i in 1:nrow(data_for_train)) {
+        # para amostra calcular o kde dela e guardar
+        pxc1vec <- c(pxc1vec, kdemulti(X_train[i,], xc1_train, h))
+        pxc2vec <- c(pxc2vec, kdemulti(X_train[i,], xc2_train, h)) 
+        if (Y_train[i] == C1_LABEL) {
+          pxlabelvec <- c(pxlabelvec, C1_LABEL_COL)
+        } else {
+          pxlabelvec <- c(pxlabelvec, C2_LABEL_COL)
+        }
+      }
+      
+      pxc1c2 <- cbind(pxc1vec, pxc2vec, pxlabelvec)
+      
+      plot(pxc1c2[,1], pxc1c2[,2], col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
+           main = paste("h = ", h))
+      # par(new=T)
+      # plot(0:10, 0:10, type="l", lty=2, lwd=3, xlab="", ylab="",
+      #      xlim=as.numeric(c(0, max(pxc1c2[,1]))), ylim=as.numeric(c(0, max(pxc1c2[,2]))))
+      
+      # indice 3: razao da distancias de cada centro à identidade
+      # identidade: 1x - 1y + 0 = 0
+      k = 2 # dois clusters
+      kmeansret <- kmeans(pxc1c2[, 1:2], k)
+      dpl_mat[h_counter, 1] <- distance_point_line(kmeansret$centers[1,], 1, -1, 0)
+      dpl_mat[h_counter, 2] <- distance_point_line(kmeansret$centers[2,], 1, -1, 0)
+      dpl_ratio <- c(dpl_ratio, dpl_mat[h_counter, 1] / dpl_mat[h_counter, 2])
+    }
     
     acc_array <- c(acc_array, num_of_corrects / nrow(data_for_test) * 100)
-    
-    Nall <- nrow(X_train)
-
-    pxc1vec <- matrix()
-    pxc2vec <- matrix()
-
-    for (i in 1:Nall) {
-      # para cada amostra calcular o kde dela e guardar
-      pxc1vec[i] <- kdemulti(X_train[i,], xc1_train, h)
-      pxc2vec[i] <- kdemulti(X_train[i,], xc2_train, h)
-    }
-
-    # pxc1c2 <- cbind(pxc1vec, pxc2vec)
-    # col_seq <- c("red", "blue")
-    # 
-    # plot(pxc1c2[,1], pxc1c2[,2], col = col_seq[((Y_train+1)/2) + 1],
-    #      xlab="pxc1", ylab="pxc2", main = paste("h = ", h))
   }
   
   acc_by_h <- c(acc_by_h, mean(acc_array))
   
-  # print(paste(mean(acc_array), " +/- ", sd(acc_array)))
-  
-  df <- data.frame(seq(1, 10, 1), round(acc_array, 2))
-  colnames(df) <- c("Fold", "Acurácia (%)")
-  ft <- flextable(df)
-  ft <- align(ft, align = "center", part = "all")
+  print(paste(mean(acc_array), " +/- ", sd(acc_array)))
 }
 
-plot(h_list, acc_by_h, lwd = 2, col = "black", type = "b")
-
-df <- data.frame(h_list, round(acc_by_h, 2))
-colnames(df) <- c("h", "Acurácia (%)")
-ft <- flextable(df)
-ft <- align(ft, align = "center", part = "all")
+par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
+plot(h_list, acc_by_h, type = "b", col = "black", lwd = 2, xlab = "h"
+     ,ylab = "Acurácia (%)") # first plot
+par(new = TRUE)
+plot(h_list, dpl_ratio, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
+     col = "orange")
+axis(side=4, at = pretty(range(dpl_ratio)))
+mtext("Índice 3", side=4, line=3)
 
 
 
