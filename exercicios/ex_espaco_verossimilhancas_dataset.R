@@ -89,17 +89,17 @@ for (i in 1:N) {
 # junta tudo na matriz dos dados
 all_data <- cbind(X, Y)
 
-n_folds <- 5
+n_folds <- 2
 fold_size <- floor(N / n_folds)
 
-# h_list <- seq(0.5, 1.5, 0.05)
-h_list <- seq(0.25, 5, 0.25)
+# h_list <- seq(0.6, 3.5, 0.1)
+h_list <- seq(0.36, 10, 0.25)
 h_counter <- 0
 
 acc_by_h <- c()
 dpl_mat <- matrix(NA, ncol = 2, nrow = length(h_list))
 dpl_ratio <- c()
-
+dist_index_norm_arr <- c()
 
 for (h in h_list) {
   h_counter <- h_counter + 1
@@ -109,7 +109,7 @@ for (h in h_list) {
     num_of_corrects <- 0
     
     start_index <- fold_size * (fold - 1) + 1
-    end_index <- start_index + fold_size
+    end_index <- start_index + fold_size - 1
     
     data_for_test <- all_data[start_index:end_index, ]
     X_test <- data_for_test[, 1:n]
@@ -149,16 +149,17 @@ for (h in h_list) {
       }
     }
 
-    # plota o espaço de semelhanças
-    
+    # plota o espaço de semelhanças do conjunto de treinamento
     if (fold == 1) {
       pxc1vec <- c()
       pxc2vec <- c()
       pxlabelvec <- c()
       for (i in 1:nrow(data_for_train)) {
         # para amostra calcular o kde dela e guardar
-        pxc1vec <- c(pxc1vec, kdemulti(X_train[i,], xc1_train, h))
-        pxc2vec <- c(pxc2vec, kdemulti(X_train[i,], xc2_train, h)) 
+        # garante vetor coluna
+        xt <- matrix(X_train[i,], ncol = 1, nrow = n)
+        pxc1vec <- c(pxc1vec, kdemulti(xt, xc1_train, h))
+        pxc2vec <- c(pxc2vec, kdemulti(xt, xc2_train, h)) 
         if (Y_train[i] == C1_LABEL) {
           pxlabelvec <- c(pxlabelvec, C1_LABEL_COL)
         } else {
@@ -168,11 +169,12 @@ for (h in h_list) {
       
       pxc1c2 <- cbind(pxc1vec, pxc2vec, pxlabelvec)
       
-      plot(pxc1c2[,1], pxc1c2[,2], col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
-           main = paste("h = ", h))
-      # par(new=T)
-      # plot(0:10, 0:10, type="l", lty=2, lwd=3, xlab="", ylab="",
-      #      xlim=as.numeric(c(0, max(pxc1c2[,1]))), ylim=as.numeric(c(0, max(pxc1c2[,2]))))
+      
+      if (h %% 2 == 0) {
+        # plot(as.numeric(pxc1c2[,1]), as.numeric(pxc1c2[,2]),
+        #      col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
+        #      main = paste("h = ", h))
+      }
       
       # indice 3: razao da distancias de cada centro à identidade
       # identidade: 1x - 1y + 0 = 0
@@ -181,6 +183,17 @@ for (h in h_list) {
       dpl_mat[h_counter, 1] <- distance_point_line(kmeansret$centers[1,], 1, -1, 0)
       dpl_mat[h_counter, 2] <- distance_point_line(kmeansret$centers[2,], 1, -1, 0)
       dpl_ratio <- c(dpl_ratio, dpl_mat[h_counter, 1] / dpl_mat[h_counter, 2])
+      
+      
+      # indice 4: distancia normalizada entre os centroids
+      dist_index_norm <- distance_two_points(
+        kmeansret$centers[1,],
+        kmeansret$centers[2,]
+      ) / min(
+        distance_two_points(kmeansret$centers[2,], c(0,0)), 
+        distance_two_points(kmeansret$centers[1,], c(0,0))
+      )
+      dist_index_norm_arr <- c(dist_index_norm_arr, dist_index_norm)
     }
     
     acc_array <- c(acc_array, num_of_corrects / nrow(data_for_test) * 100)
@@ -191,14 +204,18 @@ for (h in h_list) {
   print(paste(mean(acc_array), " +/- ", sd(acc_array)))
 }
 
+
+plot(h_list, acc_by_h, type = "b", col = "black", lwd = 3, xlab = "h"
+     ,ylab = "Acurácia (%)", main = "Acurácia (%) em função de h") # first plot
+
 par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
 plot(h_list, acc_by_h, type = "b", col = "black", lwd = 2, xlab = "h"
      ,ylab = "Acurácia (%)") # first plot
 par(new = TRUE)
-plot(h_list, dpl_ratio, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
+plot(h_list, dist_index_norm_arr, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
      col = "orange")
-axis(side=4, at = pretty(range(dpl_ratio)))
-mtext("Índice 3", side=4, line=3)
-
-
+axis(side=4, at = pretty(range(dist_index_norm_arr)))
+mtext("Distância Normalizada", side=4, line=3)
+legend("bottomleft", legend = c("Acurácia (%)", "Distância Normalizada"),
+       col=c("black", "orange"), lty=1)
 

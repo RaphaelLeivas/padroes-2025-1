@@ -89,7 +89,7 @@ all_data <- cbind(xall, yall)
 # embaralha a matriz dos dados de entrada - remove bias de coleta
 all_data <- all_data[sample.int(nrow(all_data)), ]
 
-n_folds <- 10
+n_folds <- 5
 fold_size <- floor(N / n_folds)
 
 h_list <- seq(0.1, 1.5, 0.1)
@@ -98,6 +98,7 @@ h_counter <- 0
 
 acc_by_h <- c()
 dist_index_array <- c()
+dist_index_norm_arr <- c()
 ratio_corr_mat <- matrix(NA, ncol = 2, nrow = length(h_list))
 dpl_mat <- matrix(NA, ncol = 2, nrow = length(h_list))
 dpl_ratio <- c()
@@ -167,8 +168,15 @@ for (h in h_list) {
       
       pxc1c2 <- cbind(pxc1vec, pxc2vec, pxlabelvec)
       
-      plot(pxc1c2[,1], pxc1c2[,2], col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
-           main = paste("h = ", h))
+      # plot(pxc1c2[,1], pxc1c2[,2], col = pxc1c2[,3], xlab="pxc1", ylab="pxc2",
+      #      main = paste("h = ", h))
+      
+      data_bxplot <- data.frame(
+        pxc1 = as.numeric(pxc1c2[,1]),
+        pxc2 = as.numeric(pxc1c2[,2])
+      )
+      boxplot(data_bxplot)
+      
       # par(new=T)
       # plot(0:10, 0:10, type="l", lty=2, lwd=3, xlab="", ylab="",
       #      xlim=as.numeric(c(0, max(pxc1c2[,1]))), ylim=as.numeric(c(0, max(pxc1c2[,2]))))
@@ -188,6 +196,13 @@ for (h in h_list) {
       dpl_mat[h_counter, 1] <- distance_point_line(kmeansret$centers[1,], 1, -1, 0)
       dpl_mat[h_counter, 2] <- distance_point_line(kmeansret$centers[2,], 1, -1, 0)
       dpl_ratio <- c(dpl_ratio, dpl_mat[h_counter, 1] / dpl_mat[h_counter, 2])
+      
+      # indice 4: distancia normalizada entre os centroids
+      dist_index_norm <- distance_two_points(
+        kmeansret$centers[1,] / max(as.numeric(pxc1c2[,1])), 
+        kmeansret$centers[2,] / max(as.numeric(pxc1c2[,2]))
+      )
+      dist_index_norm_arr <- c(dist_index_norm_arr, dist_index_norm)
       
       # indice 2: numero de pontos que cruzam a identidade
       # num_corr_c1 <- 0
@@ -230,9 +245,9 @@ par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
 plot(h_list, acc_by_h, type = "b", col = "black", lwd = 2, xlab = "h"
      ,ylab = "Acurácia (%)") # first plot
 par(new = TRUE)
-plot(h_list, dpl_ratio, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
+plot(h_list, dist_index_norm_arr, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
      col = "orange")
-axis(side=4, at = pretty(range(dpl_ratio)))
+axis(side=4, at = pretty(range(dist_index_norm_arr)))
 mtext("Índice 3", side=4, line=3)
 
 df <- data.frame(h_list, round(acc_by_h, 2))
