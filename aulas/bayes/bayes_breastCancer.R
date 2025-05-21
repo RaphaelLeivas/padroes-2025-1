@@ -66,6 +66,10 @@ acc_array <- c()
 
 for (fold in 1:n_folds) {
   num_of_corrects <- 0
+  num_tp <- 0
+  num_tn <- 0
+  num_fp <- 0
+  num_fn <- 0
   
   start_index <- fold_size * (fold - 1) + 1
   end_index <- start_index + fold_size
@@ -107,10 +111,26 @@ for (fold in 1:n_folds) {
     
     # verifica se esta certo
     if (yhat == Y_test[i]) num_of_corrects <- num_of_corrects + 1
+    
+    if (yhat == BENIGN_LABEL && Y_test[i] == BENIGN_LABEL) {
+      num_tp <- num_tp + 1
+    }
+    if (yhat == BENIGN_LABEL && Y_test[i] == MALIGN_LABEL) {
+      num_fp <- num_fp + 1
+    }
+    if (yhat == MALIGN_LABEL && Y_test[i] == BENIGN_LABEL) {
+      num_fn <- num_fn + 1
+    }
+    if (yhat == MALIGN_LABEL && Y_test[i] == MALIGN_LABEL) {
+      num_tn <- num_tn + 1
+    }
   }
   
   acc_array <- c(acc_array, num_of_corrects / fold_size * 100)
 }
+
+print(c(num_tp, num_fn))
+print(c(num_fp, num_tn))
 
 print(paste(mean(acc_array), " +/- ", sd(acc_array)))
 

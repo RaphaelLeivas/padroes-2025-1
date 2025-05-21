@@ -39,7 +39,7 @@ kdemulti <- function(xi, xall, h) {
   
   emat <- exp(-dximat/2)
   
-  pxi <- sum(emat)/(N * (sqrt(2 * pi) * h)^n) # eq 1.15
+  pxi <- sum(emat)/(N * sqrt(2 * pi) * h)^n # eq 1.15
   
   return (pxi)
 }
@@ -67,6 +67,20 @@ start_variables_column <- 1
 end_variables_column <- 8
 label_column <- 9
 
+# toma o numero de positivos e negativos
+npos <- nrow(data2[which(data2[,label_column]=="pos") ,])
+nneg <- nrow(data2[which(data2[,label_column]=="neg") ,])
+
+data3 <- data.frame()
+# duplica os positivos para a reamostragem
+for (i in 1:nrow(data2)) {
+  data3 <- rbind(data3, data2[i,])
+  if (data2[i, label_column]=="pos") {
+    # replica
+    data3 <- rbind(data3, data2[i,])
+  }
+}
+
 X <- data.matrix(data2[, start_variables_column:end_variables_column])
 
 N <- nrow(X) # numero de amostras
@@ -93,7 +107,7 @@ n_folds <- 2
 fold_size <- floor(N / n_folds)
 
 # h_list <- seq(0.6, 3.5, 0.1)
-h_list <- seq(0.75, 40, 1)
+h_list <- seq(0.36, 10, 0.25)
 h_counter <- 0
 
 acc_by_h <- c()
@@ -211,11 +225,11 @@ plot(h_list, acc_by_h, type = "b", col = "black", lwd = 3, xlab = "h"
 par(mar = c(5, 4, 4, 4) + 0.3)  # Leave space for z axis
 plot(h_list, acc_by_h, type = "b", col = "black", lwd = 2, xlab = "h"
      ,ylab = "Acurácia (%)") # first plot
-par(new = TRUE)
-plot(h_list, dist_index_norm_arr, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
-     col = "orange")
-axis(side=4, at = pretty(range(dist_index_norm_arr)))
-mtext("Distância Normalizada", side=4, line=3)
-legend("bottomleft", legend = c("Acurácia (%)", "Distância Normalizada"),
-       col=c("black", "orange"), lty=1)
+# par(new = TRUE)
+# plot(h_list, dist_index_norm_arr, type = "b", axes = FALSE, bty = "n", xlab = "", ylab = "", lwd = 2,
+#      col = "orange")
+# axis(side=4, at = pretty(range(dist_index_norm_arr)))
+# mtext("Distância Normalizada", side=4, line=3)
+# legend("bottomleft", legend = c("Acurácia (%)", "Distância Normalizada"),
+#        col=c("black", "orange"), lty=1)
 
