@@ -64,6 +64,7 @@ acc_array <- c()
 acc_mean_array <- c()
 
 h_list <- seq(0.1, 2, 0.1)
+h_list <- c(0.7)
 C <- 15
 
 for (h in h_list) {
@@ -84,9 +85,17 @@ for (h in h_list) {
     # treina a rede
     svm_train <- ksvm(X_train, Y_train, type='C-bsvc', kernel='rbfdot',
                       kpar=list(sigma=h), C=C)
+    a <- alpha(svm_train)
+    ai <- SVindex(svm_train)
     
-    # svm_train <- ksvm(X_train, Y_train, type='C-bsvc', kernel='besseldot',
-    #                    C=C)
+    # svm_train <- ksvm(X_train, Y_train, type='C-bsvc', kernel='polydot',
+    #                    C=C, kpar=list(degree=2))
+    
+    # svm_train <- ksvm(X_train, Y_train, type='C-bsvc', kernel='tanhdot',
+    #                    C=C, kpar=list(scale=0.001))
+    
+    # svm_train <- ksvm(X_train, Y_train, type='C-bsvc', kernel='laplacedot',
+    #                   kpar=list(sigma=h), C=C)
     
     yhat <- predict(svm_train, X_test, type="response")
     
@@ -105,10 +114,13 @@ for (h in h_list) {
     kall <- exp(-(dall*dall) / (2 * (h)^2))
     
     n_train <- nrow(X_train)
-    k11 <- kall[(1:(n_train/2)), (1:(n_train/2))]
-    k12 <- kall[(1:(n_train/2)), ((n_train / 2) + 1):n_train]
-    k21 <- kall[((n_train / 2) + 1):n_train, (1:(n_train/2))]
-    k22 <- kall[((n_train / 2) + 1):n_train, ((n_train / 2) + 1):n_train]
+    first_half <- 1:(n_train/2)
+    second_half <- ((n_train / 2) + 1):n_train
+    
+    k11 <- kall[first_half, first_half]
+    k12 <- kall[first_half, second_half]
+    k21 <- kall[second_half, first_half]
+    k22 <- kall[second_half, second_half]
     
     p11 <- rowSums(k11)
     p12 <- rowSums(k12)
@@ -118,14 +130,17 @@ for (h in h_list) {
     p1 <- cbind(p11, p12) / (n_train / 2)
     p2 <- cbind(p21, p22) / (n_train / 2)
     
-    pall <- cbind(p1, p2)
+    pall <- rbind(p1, p2)
     
-    plot(p1[,1], p1[,2], col = "red", xlim=c(0,1), ylim=c(0,1), lwd = 2)
+    limit <- c(0, 0.4)
+    plot(p1[,1], p1[,2], col = "red", xlim=limit, ylim=limit, lwd = 2)
     par(new=T)
-    plot(p2[,1], p2[,2], col = "blue", xlim=c(0,1), ylim=c(0,1), lwd = 2)
+    plot(p2[,1], p2[,2], col = "blue", xlim=limit, ylim=limit, lwd = 2)
+    par(new=T)
+    plot(pall[ai,1], pall[ai,2], col = "black", xlim=limit, ylim=limit, lwd = 2)
   }
   
-  # print(paste(mean(acc_array), " +/- ", sd(acc_array)))
+  print(paste(mean(acc_array), " +/- ", sd(acc_array)))
   
   acc_mean_array <- c(acc_mean_array, mean(acc_array))
 }
