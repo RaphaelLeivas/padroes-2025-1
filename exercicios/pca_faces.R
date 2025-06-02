@@ -44,12 +44,16 @@ for (i in 1:nrow(faces)) {
 }
 
 # faz o PCA
-# X <- as.matrix(faces)
-# meanx<-colMeans(X)
-# Xs<- X - t(replicate(dim(X)[1],meanx))
-# S<-cov(Xs)
-# eigS<-eigen(S)
-# projX<-Xs %*% eigS$vectors
+X <- as.matrix(faces)
+meanx<-colMeans(X)
+Xs<- X - t(replicate(dim(X)[1],meanx))
+S<-cov(Xs)
+eigS<-eigen(S)
+projX<-Xs %*% eigS$vectors
+
+plot(eigS$values[1:20],type='b',xlab='',ylab='Autovalor',col='red', lwd = 2, main = "Autovalores")
+
+BUG()
 
 # salva no CSV para nao precisar ficar calculando toda hora
 # csv_df <- data.frame(projX)
@@ -69,6 +73,10 @@ all_data <- cbind(projX, y)
 acc_array <- c()
 
 experiments <- 10
+
+k <- 5 # 50%
+# k <- 7 # 70%
+# k <- 9 # 90%
 
 for (exp in 1:experiments) {
   # embaralha a matriz dos dados de entrada - remove bias de coleta
@@ -115,7 +123,7 @@ for (exp in 1:experiments) {
 print(paste(mean(acc_array), " +/- ", sd(acc_array)))
 
 df <- data.frame(seq(1, 10, 1), round(acc_array, 2))
-colnames(df) <- c("Fold", "Acurácia (%)")
+colnames(df) <- c("Execução", "Acurácia (%)")
 ft <- flextable(df)
 ft <- align(ft, align = "center", part = "all")
 
