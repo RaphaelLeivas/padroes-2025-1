@@ -44,7 +44,7 @@ for (i in 1:nrow(faces)) {
 }
 
 # faz o PCA
-X <- as.matrix(faces)
+# X <- as.matrix(faces)
 meanx<-colMeans(X)
 Xs<- X - t(replicate(dim(X)[1],meanx))
 S<-cov(Xs)
@@ -53,7 +53,6 @@ projX<-Xs %*% eigS$vectors
 
 plot(eigS$values[1:20],type='b',xlab='',ylab='Autovalor',col='red', lwd = 2, main = "Autovalores")
 
-BUG()
 
 # salva no CSV para nao precisar ficar calculando toda hora
 # csv_df <- data.frame(projX)
@@ -87,11 +86,11 @@ for (exp in 1:experiments) {
   
   # metade dos indices de c1 vai para train, a outra metade para vai teste
   # mesma coisa para o c2
-  train_indexes <- c(c1_indexes[1:(length(c1_indexes)/ 2)],
-                     c2_indexes[1:(length(c2_indexes)/ 2)])
+  train_indexes <- c(c1_indexes[1:k],
+                     c2_indexes[1:(k * 390 / 10)])
   
-  test_indexes <- c(c1_indexes[(length(c1_indexes)/2 + 1):length(c1_indexes)],
-                    c2_indexes[(length(c2_indexes)/2 + 1):length(c2_indexes)])
+  test_indexes <- c(c1_indexes[(k+1):length(c1_indexes)],
+                    c2_indexes[(k * 390 / 10 + 1):length(c2_indexes)])
   
   X_train <- as.matrix(all_data[train_indexes, 1:eig_to_use])
   Y_train <- all_data[train_indexes, ncol(all_data)]
@@ -115,9 +114,9 @@ for (exp in 1:experiments) {
     }
   }
   
-  print(num_of_corrects / (NUMBER_OF_FACES / 2) * 100)
+  print(num_of_corrects / length(Y_test) * 100)
   
-  acc_array <- c(acc_array, num_of_corrects / (NUMBER_OF_FACES / 2) * 100)
+  acc_array <- c(acc_array, num_of_corrects / length(Y_test) * 100)
 }
 
 print(paste(mean(acc_array), " +/- ", sd(acc_array)))
